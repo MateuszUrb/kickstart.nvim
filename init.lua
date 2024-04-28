@@ -91,10 +91,8 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
-<<<<<<< Updated upstream
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
-=======
 -- set tab to 4 spaces
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
@@ -126,7 +124,6 @@ end
 
 -- Set to true if you have a Nerd Font installed
 vim.g.have_nerd_font = true
->>>>>>> Stashed changes
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -134,13 +131,8 @@ vim.g.have_nerd_font = true
 --  For more options, you can see `:help option-list`
 
 -- Make line numbers default
-<<<<<<< Updated upstream
 vim.opt.number = true
--- You can also add relative line numbers, to help with jumping.
-=======
--- vim.opt.number = true
 -- You can also add relative line numbers, for help with jumping.
->>>>>>> Stashed changes
 --  Experiment for yourself to see if you like it!
 vim.opt.relativenumber = true
 
@@ -301,9 +293,6 @@ require('lazy').setup({
     },
   },
 
-<<<<<<< Updated upstream
-  -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
-=======
   {
     'kylechui/nvim-surround',
     version = '*', -- Use for stability; omit to use `main` branch for the latest features
@@ -340,7 +329,6 @@ require('lazy').setup({
     end,
   },
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
->>>>>>> Stashed changes
   --
   -- This is often very useful to both group configuration, as well as handle
   -- lazy loading plugins that don't need to be loaded immediately at startup.
@@ -777,12 +765,12 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
       },
       'saadparwaiz1/cmp_luasnip',
@@ -792,8 +780,6 @@ require('lazy').setup({
       --  into multiple repos for maintenance purposes.
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
-<<<<<<< Updated upstream
-=======
       'hrsh7th/cmp-buffer',
       'hrsh7th/cmp-cmdline',
       'saadparwaiz1/cmp_luasnip',
@@ -804,7 +790,6 @@ require('lazy').setup({
       --    for various frameworks/libraries/etc. but you will have to
       --    set up the ones that are useful for you.
       'rafamadriz/friendly-snippets',
->>>>>>> Stashed changes
     },
     config = function()
       -- See `:help cmp`
@@ -1005,17 +990,8 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-<<<<<<< Updated upstream
-  -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
-=======
   require 'kickstart.plugins.debug',
   require 'kickstart.plugins.indent_line',
->>>>>>> Stashed changes
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
