@@ -1,6 +1,5 @@
 --[[
 
-
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
@@ -99,6 +98,10 @@ vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
 vim.opt.shiftwidth = 4
 vim.expandtab = true
+
+vim.opt.spell = true
+vim.opt.spelllang = 'en_us'
+
 -- disable netrw at the very start of your init.lua
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
@@ -201,8 +204,19 @@ vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagn
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 vim.diagnostic.config {
+  virtual_text = {
+    -- source = "always",  -- Or "if_many"
+    prefix = '●', -- Could be '■', '▎', 'x'
+  },
+  severity_sort = true,
+  float = {
+    source = 'always', -- Or "if_many"
+  },
+  signs = true,
+  underline = true,
   update_in_insert = true,
 }
+
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.
@@ -261,6 +275,7 @@ vim.opt.rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
+
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
@@ -482,8 +497,7 @@ require('lazy').setup({
     end,
   },
 
-    
- { -- LSP Configuration & Plugins
+  { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
@@ -499,6 +513,7 @@ require('lazy').setup({
       -- used for completion, annotations and signatures of Neovim apis
       { 'folke/neodev.nvim', opts = {} },
     },
+
     config = function()
       -- Brief aside: **What is LSP?**
       --
@@ -650,8 +665,9 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
-        tsserver = {},
+        -- tsserver = {},
         --
+        css_variables = {},
 
         lua_ls = {
           -- cmd = {...},
@@ -707,7 +723,7 @@ require('lazy').setup({
       {
         '<leader>f',
         function()
-          require('conform').format { async = true, lsp_fallback = true }
+          require('conform').format { async = false, lsp_fallback = true }
         end,
         mode = '',
         desc = '[F]ormat buffer',
@@ -767,6 +783,7 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
+
           {
             'rafamadriz/friendly-snippets',
             config = function()
@@ -805,6 +822,32 @@ require('lazy').setup({
           expand = function(args)
             luasnip.lsp_expand(args.body)
           end,
+        },
+
+        formatting = {
+          format = function(entry, vim_item)
+            vim_item.menu = ({
+              nvim_lsp = '[LSP]',
+              look = '[Dist]',
+              buffer = '[Buffer]',
+            })[entry.source.name]
+            return vim_item
+          end,
+        },
+
+        sorting = {
+          comparators = {
+            cmp.config.compare.exact,
+            cmp.config.compare.recently_used,
+            cmp.config.compare.offset,
+            cmp.config.compare.score,
+            cmp.config.compare.kind,
+          },
+        },
+
+        window = {
+          completion = cmp.config.window.bordered(),
+          documentation = cmp.config.window.bordered(),
         },
 
         completion = { completeopt = 'menu,menuone,noinsert,preview,noselect' },
@@ -862,11 +905,20 @@ require('lazy').setup({
           --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
         },
         sources = {
-          { name = 'nvim_lsp' },
+          { name = 'path' },
           { name = 'luasnip' },
-          { name = 'path' },
+          { name = 'nvim_lsp' },
           { name = 'buffer' },
-          { name = 'path' },
+          {
+            name = 'spell',
+            option = {
+              keep_all_entries = false,
+              enable_in_context = function()
+                return true
+              end,
+              preselect_correct_word = true,
+            },
+          },
         },
       }
       cmp.setup.cmdline(':', {
@@ -877,6 +929,11 @@ require('lazy').setup({
           { name = 'cmdline' },
         }),
       })
+      cmp.setup.cmdline('/', {
+        sources = {
+          { name = 'buffer' },
+        },
+      })
     end,
   },
   { -- You can easily change to a different colorscheme.
@@ -886,16 +943,25 @@ require('lazy').setup({
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
+    config = function()
+      require('tokyonight').setup {
+        -- other configs
+        on_colors = function(colors)
+          colors.border = '#00b8ff'
+        end,
+      }
+    end,
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'tokyonight-moon'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
     end,
   },
+
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -951,6 +1017,7 @@ require('lazy').setup({
 
     dependencies = {
       'nvim-treesitter/nvim-treesitter-context',
+      'nvim-treesitter/nvim-treesitter-textobjects',
     },
     build = ':TSUpdate',
     opts = {
@@ -995,7 +1062,7 @@ require('lazy').setup({
   require 'kickstart.plugins.debug',
   require 'kickstart.plugins.indent_line',
   require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.gitsigns',
 

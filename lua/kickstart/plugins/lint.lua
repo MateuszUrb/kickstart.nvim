@@ -8,16 +8,16 @@ return {
       lint.linters_by_ft = {
         markdown = { 'markdownlint' },
         javascript = {
-          'eslint_d',
+          'eslint',
         },
         typescript = {
-          'eslint_d',
+          'eslint',
         },
         javascriptreact = {
-          'eslint_d',
+          'eslint',
         },
         tyescriptreact = {
-          'eslint_d',
+          'eslint',
         },
       }
 
@@ -60,6 +60,7 @@ return {
         group = lint_augroup,
         callback = function()
           require('lint').try_lint()
+          vim.keymap.set('n', '<leader>l', ':EslintFixAll<CR>', { desc = 'Trigger linting for current file' })
         end,
       })
     end,

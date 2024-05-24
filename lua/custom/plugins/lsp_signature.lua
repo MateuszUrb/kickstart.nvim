@@ -76,6 +76,7 @@ return {
       require('lsp_signature').on_attach(cfg, bufnr) -- no need to specify bufnr if you don't use toggle_key
     end,
   },
+
   vim.keymap.set({ 'n' }, '<C-k>', function()
     require('lsp_signature').toggle_float_win()
   end, { silent = true, noremap = true, desc = 'toggle signature' }),
