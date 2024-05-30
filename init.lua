@@ -83,7 +83,6 @@ I hope you enjoy your Neovim journey,
 
 P.S. You can delete this when you're done too. It's your config now! :)
 --]]
-
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
@@ -964,6 +963,12 @@ require('lazy').setup({
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
       require('tokyonight').setup {
+        transparent = true,
+        dim_inactive = true,
+        styles = {
+          sidebars = 'transparent',
+          floats = 'transparent',
+        },
         -- other configs
         on_colors = function(colors)
           colors.border = '#00b8ff'

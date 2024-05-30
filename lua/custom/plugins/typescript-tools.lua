@@ -29,15 +29,15 @@ return {
     local keymap = vim.keymap
     require('typescript-tools').setup {
 
-      keymap.set('n', '<leader>to', '<cmd>TSToolsOrganizeImports<cr>'),
-      keymap.set('n', '<leader>ta', '<cmd>TSToolsAddMissingImports<cr>'),
-      keymap.set('n', '<leader>ts', '<cmd>TSToolsSortImports<cr>'),
-      keymap.set('n', '<leader>tr', '<cmd>TSToolsRemoveUnusedImports<cr>'),
-      keymap.set('n', '<leader>ti', '<cmd>TSToolsAddMissingImports<cr>'),
-      keymap.set('n', '<leader>tf', '<cmd>TSToolsFixAll<cr>'),
-      keymap.set('n', '<leader>td', '<cmd>TSToolsGoToSourceDefinition<cr>'),
-      keymap.set('n', '<leader>tn', '<cmd>TSToolsRenameFile<cr>'),
-      keymap.set('n', '<leader>tt', '<cmd>TSToolsFileReferences<cr>'),
+      -- keymap.set('n', '<leader>to', '<cmd>TSToolsOrganizeImports<cr>'),
+      -- keymap.set('n', '<leader>ta', '<cmd>TSToolsAddMissingImports<cr>'),
+      -- keymap.set('n', '<leader>ts', '<cmd>TSToolsSortImports<cr>'),
+      -- keymap.set('n', '<leader>tr', '<cmd>TSToolsRemoveUnusedImports<cr>'),
+      -- keymap.set('n', '<leader>ti', '<cmd>TSToolsAddMissingImports<cr>'),
+      -- keymap.set('n', '<leader>tf', '<cmd>TSToolsFixAll<cr>'),
+      -- keymap.set('n', '<leader>td', '<cmd>TSToolsGoToSourceDefinition<cr>'),
+      -- keymap.set('n', '<leader>tn', '<cmd>TSToolsRenameFile<cr>'),
+      -- keymap.set('n', '<leader>tt', '<cmd>TSToolsFileReferences<cr>'),
     }
   end,
 }
