@@ -1,7 +1,6 @@
 return {
   {
     'kkoomen/vim-doge',
-    event = 'BufRead',
     config = function()
       -- Generate comment for current line
       vim.keymap.set('n', '<Leader>n', '<Plug>(doge-generate)')
