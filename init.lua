@@ -19,7 +19,6 @@
 ========                                                     ========
 =====================================================================
 =====================================================================
-
 What is Kickstart?
 
   Kickstart.nvim is *not* a distribution.
@@ -90,6 +89,21 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+-- moonfly colors
+vim.g.moonflyNormalFloat = true
+vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
+  border = 'single',
+})
+vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(vim.lsp.handlers.signatureHelp, {
+  border = 'single',
+})
+vim.diagnostic.config { float = { border = 'single' } }
+vim.g.moonflyVirtualTextColor = true
+vim.g.moonflyWinSeparator = 2
+vim.opt.fillchars = { horiz = '━', horizup = '┻', horizdown = '┳', vert = '┃', vertleft = '┫', vertright = '┣', verthoriz = '╋' }
+vim.g.moonflyCursorColor = true
+vim.g.moonflyUnderlineMatchParen = true
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 -- set tab to 4 spaces
 vim.opt.tabstop = 4
@@ -157,6 +171,8 @@ vim.opt.breakindent = true
 
 -- Save undo history
 vim.opt.undofile = true
+-- Save to this directory
+vim.opt.undodir = os.getenv 'HOME' .. '/undodir'
 
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
 vim.opt.ignorecase = true
@@ -285,6 +301,7 @@ vim.opt.rtp:prepend(lazypath)
 --    :Lazy update
 --
 -- NOTE: Here is where you install your plugins.
+
 require('lazy').setup({
 
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
@@ -668,8 +685,8 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         clangd = {},
+        pyright = {},
         gopls = {},
-        -- pyright = {},
         rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -749,20 +766,26 @@ require('lazy').setup({
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
         local disable_filetypes = { c = true, cpp = true }
+        if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+          return
+        end
         return {
-          timeout_ms = 500,
+          timeout_ms = 2500,
           lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
         }
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'isort', 'black' },
         --
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        javascript = { { 'prettierd', 'prettier', stop_after_first = true } },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        json = { 'jq' },
+        css = { 'prettierd', 'prettier' },
+        html = { 'prettierd', 'prettier' },
         typescript = { 'prettierd', 'prettier' },
         javascriptreact = { 'prettierd', 'prettier' },
         typescriptreact = { 'prettierd', 'prettier' },
@@ -847,6 +870,9 @@ require('lazy').setup({
       -- See `:help cmp`
       local cmp = require 'cmp'
       local luasnip = require 'luasnip'
+      local winhighlight = {
+        winhighlight = 'Normal:NormalFloat,FloatBorder:FloatBorder,CursorLine:PmenuSel',
+      }
       require('luasnip.loaders.from_vscode').lazy_load()
       luasnip.config.setup {}
 
@@ -864,6 +890,12 @@ require('lazy').setup({
               look = '[Dist]',
               buffer = '[Buffer]',
             })[entry.source.name]
+            vim_item.dup = ({
+              vsnip = 0,
+              nvim_lsp = 0,
+              nvim_lua = 0,
+              buffer = 0,
+            })[entry.source.name] or 0
             return vim_item
           end,
         },
@@ -879,8 +911,8 @@ require('lazy').setup({
         },
 
         window = {
-          completion = cmp.config.window.bordered(),
-          documentation = cmp.config.window.bordered(),
+          completion = cmp.config.window.bordered(winhighlight),
+          documentation = cmp.config.window.bordered(winhighlight),
         },
 
         completion = { completeopt = 'menu,menuone,noinsert,preview,noselect' },
@@ -976,37 +1008,63 @@ require('lazy').setup({
       })
     end,
   },
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    config = function()
-      require('tokyonight').setup {
-        transparent = true,
-        dim_inactive = true,
-        styles = {
-          sidebars = 'transparent',
-          floats = 'transparent',
-        },
-        -- other configs
-        on_colors = function(colors)
-          colors.border = '#00b8ff'
-        end,
-      }
-    end,
-    init = function()
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-moon'
 
-      -- You can configure highlights by doing something like:
-      vim.cmd.hi 'Comment gui=none'
+  {
+    'bluz71/vim-moonfly-colors',
+    name = 'moonfly',
+    lazy = false,
+    priority = 1000,
+
+    init = function()
+      vim.cmd [[colorscheme moonfly]]
     end,
   },
+
+  -- {
+  --   'EdenEast/nightfox.nvim',
+  --   variant = 'carbonfox',
+  --   init = function()
+  --     -- Load the colorscheme here.
+  --     -- Like many other themes, this one has different styles, and you could load
+  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'carbonfox'
+  --
+  --     -- You can configure highlights by doing something like:
+  --     vim.cmd.hi 'Comment gui=none'
+  --   end,
+  -- },
+  -- { -- You can easily change to a different colorscheme.
+  --   -- Change the name of the colorscheme plugin below, and then
+  --   -- change the command in the config to whatever the name of that colorscheme is.
+  --   --
+  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --   'folke/tokyonight.nvim',
+  --   lazy = false,
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   config = function()
+  --     require('tokyonight').setup {
+  -- transparent = true,
+  --       dim_inactive = true,
+  --       styles = {
+  --         sidebars = 'transparent',
+  --         floats = 'transparent',
+  --       },
+  --       -- other configs
+  --       on_colors = function(colors)
+  --         colors.border = '#00b8ff'
+  --       end,
+  --     }
+  --   end,
+  --   init = function()
+  --     -- Load the colorscheme here.
+  --     -- Like many other themes, this one has different styles, and you could load
+  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'tokyonight'
+  --
+  --     -- You can configure highlights by doing something like:
+  --     vim.cmd.hi 'Comment gui=none'
+  --   end,
+  -- },
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
@@ -1067,7 +1125,7 @@ require('lazy').setup({
     },
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'ninja', 'python', 'rst', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
