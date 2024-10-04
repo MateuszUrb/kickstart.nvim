@@ -530,6 +530,7 @@ require('lazy').setup({
     },
   },
   { 'Bilal2453/luvit-meta', lazy = true },
+
   {
     -- Main LSP Configuration
     'neovim/nvim-lspconfig',
@@ -792,7 +793,7 @@ require('lazy').setup({
         go = { 'gofumpt', 'goimports' },
         c = { 'clang-format' },
         -- Use the "*" filetype to run formatters on all filetypes.
-        ['*'] = { 'codespell' },
+        -- ['*'] = { 'codespell' },
         -- Use the "_" filetype to run formatters on filetypes that don't
         -- have other formatters configured.
         ['_'] = { 'trim_whitespace' },
