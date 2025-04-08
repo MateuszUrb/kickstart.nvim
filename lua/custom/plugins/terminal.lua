@@ -1,5 +1,10 @@
 return {
-  { 'akinsho/toggleterm.nvim', version = '*', config = true, opts = {
-    open_mapping = [[<C-\>]],
-  } },
+  {
+    'akinsho/toggleterm.nvim',
+    version = '*',
+    event = 'ColorScheme',
+    opts = {
+      open_mapping = [[<C-\>]],
+    },
+  },
 }

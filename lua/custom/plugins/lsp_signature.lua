@@ -1,41 +1,27 @@
 return {
   {
     'ray-x/lsp_signature.nvim',
-    event = 'VeryLazy',
+    event = 'BufRead',
     opts = {},
-    init = function(_, opts)
-      vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none', fg = 'white' })
-      vim.api.nvim_set_hl(0, 'FloatBorder', { bg = 'none', fg = 'white' })
-      vim.cmd [[
-  augroup CustomColors
-    autocmd!
-    autocmd ColorScheme * lua vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'NONE', ctermbg = 'NONE' })
-    autocmd ColorScheme * lua vim.api.nvim_set_hl(0, 'FloatBorder', { bg = 'NONE', ctermbg = 'NONE' })
-  augroup END
-]]
+    config = function()
       require('lsp_signature').setup {
-        bind = true,
+        bind = true, -- This is mandatory, otherwise border config won't work
+        doc_lines = 10, -- How many lines of the signature to show
+        floating_window = true, -- Show signature in a floating window
+        hint_enable = false, -- Enable virtual hint
+        hint_prefix = '🔍 ', -- Icon for parameter hints
+        hint_scheme = 'String', -- Highlight group for hints
+        hi_parameter = 'IncSearch',
+        max_width = 80, -- Max width of the floating window
+        max_height = 12, -- Max height of the floating window
+        wrap = true,
         handler_opts = {
-          border = 'single', -- double, rounded, single, shadow, none, or a table of borders
+          border = 'single', -- Options: "single", "double", "rounded", "shadow", "none"
         },
-        floating_window_off_x = 5, -- adjust float windows x position.
-        floating_window_off_y = function() -- adjust float windows y position. e.g. set to -2 can make floating window move up 2 lines
-          local linenr = vim.api.nvim_win_get_cursor(0)[1] -- buf line number
-          local pumheight = vim.o.pumheight
-          local winline = vim.fn.winline() -- line number in the window
-          local winheight = vim.fn.winheight(0)
-
-          -- window top
-          if winline - 1 < pumheight then
-            return pumheight
-          end
-
-          -- window bottom
-          if winheight - winline < pumheight then
-            return -pumheight
-          end
-          return 0
-        end,
+        always_trigger = false, -- Show signature on new line instead of always
+        transparency = nil, -- Transparency of the floating window
+        timer_interval = 200, -- Timer interval for updates (in ms)
+        toggle_key = '<M-x>', -- Key to toggle signature on/off in insert mode
       }
     end,
   },
