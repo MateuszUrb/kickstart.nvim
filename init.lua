@@ -1,5 +1,4 @@
 --[[
-
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
@@ -20,8 +19,8 @@
 =====================================================================
 =====================================================================
 
-What is Kickstart?
 
+What is Kickstart?
   Kickstart.nvim is *not* a distribution.
 
   Kickstart.nvim is a starting point for your own configuration.
@@ -35,14 +34,11 @@ What is Kickstart?
     If you don't know anything about Lua, I recommend taking some time to read through
     a guide. One possible example which will only take 10-15 minutes:
       - https://learnxinyminutes.com/docs/lua/
-
     After understanding a bit more about Lua, you can use `:help lua-guide` as a
     reference for how Neovim integrates Lua.
     - :help lua-guide
     - (or HTML version): https://neovim.io/doc/user/lua-guide.html
-
 Kickstart Guide:
-
   TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
 
     If you don't know what this means, type the following:
@@ -87,11 +83,17 @@ P.S. You can delete this when you're done too. It's your config now! :)
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
+vim.loader.enable()
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+vim.opt.guicursor = 'n-v-c:block'
+vim.opt.termguicolors = true
+
+vim.opt.fillchars = { horiz = '━', horizup = '┻', horizdown = '┳', vert = '┃', vertleft = '┫', vertright = '┣', verthoriz = '╋' }
+vim.api.nvim_set_hl(0, 'VertSplit', { fg = '#00FF00' }) -- Green separator
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -99,10 +101,12 @@ vim.g.have_nerd_font = false
 --  For more options, you can see `:help option-list`
 
 -- Make line numbers default
-vim.o.number = true
+
+-- vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.opt.relativenumber = true
+
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -141,6 +145,20 @@ vim.o.timeoutlen = 300
 vim.o.splitright = true
 vim.o.splitbelow = true
 
+-- lsp hover
+vim.o.winborder = 'rounded'
+vim.cmd [[let &t_Cs = "\e[4:3m"]]
+vim.cmd [[let &t_Ce = "\e[4:0m"]]
+vim.opt.spell = true
+vim.opt.spelllang = { 'en_us' }
+vim.keymap.set('n', 'K', function()
+  vim.lsp.buf.hover { border = 'single', title = 'lsp' }
+end)
+
+-- Optional: Customize the appearance further using `vim.api.nvim_set_hl`
+-- Example: Change the border color to white
+vim.api.nvim_set_hl(0, 'FloatBorder', { fg = '#ffffff' })
+
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
@@ -168,6 +186,11 @@ vim.o.confirm = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
+--
+
+-- quickfix navigation
+vim.keymap.set('n', '<M-j>', '<cmd>cnext<CR>')
+vim.keymap.set('n', '<M-k>', '<cmd>cprev<CR>')
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
@@ -175,6 +198,7 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>k', vim.diagnostic.open_float, { desc = 'show diagnostic under cursor' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -246,6 +270,8 @@ rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
+  -- for better jsx comments
+  'JoosepAlviste/nvim-ts-context-commentstring',
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
 
@@ -382,6 +408,8 @@ require('lazy').setup({
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
+      local builtin = require 'telescope.builtin'
+      local actions = require 'telescope.actions'
       -- Telescope is a fuzzy finder that comes with a lot of different things that
       -- it can fuzzy find! It's more than just a "file finder", it can search
       -- many different aspects of Neovim, your workspace, LSP, and more!
@@ -407,12 +435,30 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        defaults = {
+          border = true,
+          file_ignore_patterns = {
+            'node_modules',
+            '.git/',
+            'package%-lock.json',
+            'dist/',
+          },
+          mappings = {
+            -- i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+            i = {
+              ['<c-d>'] = actions.delete_buffer,
+            },
+            n = {
+              ['<c-d>'] = actions.delete_buffer,
+              ['dd'] = actions.delete_buffer,
+            },
+          },
+        },
+        pickers = {
+          find_files = {
+            hidden = true,
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -590,8 +636,28 @@ require('lazy').setup({
           --    See `:help CursorHold` for information about when this is executed
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
+
+          ---@param client vim.lsp.Client
+          ---@param method vim.lsp.protocol.Method
+          ---@param bufnr? integer some lsp support methods only in specific files
+          ---@return boolean
+          local function client_supports_method(client, method, bufnr)
+            if vim.fn.has 'nvim-0.11' == 1 then
+              return client:supports_method(method, bufnr)
+            else
+              return client.supports_method(method, { bufnr = bufnr })
+            end
+          end
+
+          -- The following two autocommands are used to highlight references of the
+          -- word under your cursor when your cursor rests there for a little while.
+          --    See `:help CursorHold` for information about when this is executed
+          --
+          -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
+
           if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
+
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
@@ -618,6 +684,7 @@ require('lazy').setup({
           -- code, if the language server you are using supports them
           --
           -- This may be unwanted, since they displace some of your code
+
           if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf) then
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
@@ -625,6 +692,7 @@ require('lazy').setup({
           end
         end,
       })
+
 
       -- Diagnostic Config
       -- See :help vim.diagnostic.Opts
@@ -672,7 +740,42 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         -- clangd = {},
-        -- gopls = {},
+        gopls = {
+          settings = {
+            gofumpt = true,
+            codelenses = {
+              gc_details = false,
+              generate = true,
+              regenerate_cgo = true,
+              run_govulncheck = true,
+              test = true,
+              tidy = true,
+              upgrade_dependency = true,
+              vendor = true,
+            },
+            hints = {
+              assignVariableTypes = true,
+              compositeLiteralFields = true,
+              compositeLiteralTypes = true,
+              constantValues = true,
+              functionTypeParameters = true,
+              parameterNames = true,
+              rangeVariableTypes = true,
+            },
+            analyses = {
+              fieldalignment = true,
+              nilness = true,
+              unusedparams = true,
+              unusedwrite = true,
+              useany = true,
+            },
+            usePlaceholders = true,
+            completeUnimported = true,
+            staticcheck = true,
+            directoryFilters = { '-.git', '-.vscode', '-.idea', '-.vscode-test', '-node_modules' },
+            semanticTokens = true,
+          },
+        },
         -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -681,7 +784,12 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {},
+        html = {},
+        cssls = {},
+        cssmodules_ls = {},
+        css_variables = {},
+
         --
 
         lua_ls = {
@@ -706,11 +814,19 @@ require('lazy').setup({
       -- other tools, you can run
       --    :Mason
       --
-      -- You can press `g?` for help in this menu.
-      --
-      -- `mason` had to be setup earlier: to configure its options see the
-      -- `dependencies` table for `nvim-lspconfig` above.
-      --
+      --  You can press `g?` for help in this menu.
+      require('mason').setup {
+        ui = {
+          border = 'rounded', -- Use rounded borders for the Mason window
+          icons = {
+            package_installed = '✅',
+            package_pending = '⏳',
+            package_uninstalled = '❌',
+          },
+        },
+      }
+
+
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
@@ -765,14 +881,22 @@ require('lazy').setup({
             lsp_format = 'fallback',
           }
         end
+        return {
+          timeout_ms = 3000,
+          lsp_format = lsp_format_opt,
+        }
       end,
+
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd' },
+        javascriptreact = { 'prettierd' },
+        typescript = { 'prettierd' },
+        typescriptreact = { 'prettierd' },
       },
     },
   },
@@ -782,6 +906,8 @@ require('lazy').setup({
     event = 'VimEnter',
     version = '1.*',
     dependencies = {
+
+      'onsails/lspkind.nvim', -- Adds VSCode-like icons to completion
       -- Snippet Engine
       {
         'L3MON4D3/LuaSnip',
@@ -799,12 +925,15 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+              require('vim-react-snippets').lazy_load()
+              require('luasnip').filetype_extend('javascript', { 'jsdoc' })
+              require('luasnip').filetype_extend('javascriptreact', { 'jsdoc' })
+            end,
+          },
         },
         opts = {},
       },
@@ -836,6 +965,7 @@ require('lazy').setup({
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'default',
+
 
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
@@ -876,34 +1006,40 @@ require('lazy').setup({
     },
   },
 
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
-
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
-    end,
-  },
-
+  -- { -- You can easily change to a different colorscheme.
+  --   -- Change the name of the colorscheme plugin below, and then
+  --   -- change the command in the config to whatever the name of that colorscheme is.
+  --   --
+  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --   'folke/tokyonight.nvim',
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   init = function()
+  --     -- Load the colorscheme here.
+  --     -- Like many other themes, this one has different styles, and you could load
+  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'tokyonight-night'
+  --
+  --     -- You can configure highlights by doing something like:
+  --     vim.cmd.hi 'Comment gui=none'
+  --   end,
+  -- },
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
+      require('mini.files').setup {
+        options = {
+          permanent_delete = false,
+        },
+        windows = {
+          preview = true,
+          width_preview = 50,
+        },
+
+        vim.api.nvim_set_keymap('n', '<leader>e', ":lua require('mini.files').open()<CR>", { desc = 'show files', noremap = true, silent = true }),
+      }
       -- Better Around/Inside textobjects
       --
       -- Examples:
@@ -944,7 +1080,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'go', 'typescript', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -973,19 +1109,47 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   -- { import = 'custom.plugins' },
-  --
+  { import = 'custom.plugins.kanagawa' },
+  { import = 'custom.plugins.comment' },
+  { import = 'custom.plugins.better_escape' },
+  { import = 'custom.plugins.bufdelete' },
+  { import = 'custom.plugins.cloak' },
+  { import = 'custom.plugins.diffview' },
+  { import = 'custom.plugins.focus' },
+  { import = 'custom.plugins.git_conflict' },
+  { import = 'custom.plugins.harpoon' },
+  { import = 'custom.plugins.init' },
+  { import = 'custom.plugins.leap' },
+  { import = 'custom.plugins.md_preview' },
+  { import = 'custom.plugins.lsp_signature' },
+  { import = 'custom.plugins.neogit' },
+  { import = 'custom.plugins.nvim_emmet' },
+  { import = 'custom.plugins.refactoring' },
+  { import = 'custom.plugins.tabby' },
+  { import = 'custom.plugins.terminal' },
+  { import = 'custom.plugins.trouble' },
+  { import = 'custom.plugins.ts_autotag' },
+  { import = 'custom.plugins.undotree' },
+  { import = 'custom.plugins.vim_doge' },
+  -- { import = 'custom.plugins.nvim_surround' },
+  { import = 'custom.plugins.treesitter_context' },
+  { import = 'custom.plugins.smartcolumn' },
+  { import = 'custom.plugins.nvim_colorizer' },
+  { import = 'custom.plugins.quicker' },
+  { import = 'custom.plugins.nvim-bqf' },
+
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
@@ -1011,6 +1175,3 @@ require('lazy').setup({
     },
   },
 })
-
--- The line beneath this is called `modeline`. See `:help modeline`
--- vim: ts=2 sts=2 sw=2 et
