@@ -19,6 +19,7 @@
 =====================================================================
 =====================================================================
 
+
 What is Kickstart?
   Kickstart.nvim is *not* a distribution.
 
@@ -90,6 +91,7 @@ vim.opt.guicursor = 'n-v-c:block'
 vim.opt.termguicolors = true
 
 vim.opt.fillchars = { horiz = '━', horizup = '┻', horizdown = '┳', vert = '┃', vertleft = '┫', vertright = '┣', verthoriz = '╋' }
+vim.api.nvim_set_hl(0, 'VertSplit', { fg = '#00FF00' }) -- Green separator
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
@@ -144,13 +146,12 @@ vim.opt.splitbelow = true
 
 -- lsp hover
 vim.o.winborder = 'rounded'
-
 vim.cmd [[let &t_Cs = "\e[4:3m"]]
 vim.cmd [[let &t_Ce = "\e[4:0m"]]
 vim.opt.spell = true
 vim.opt.spelllang = { 'en_us' }
 vim.keymap.set('n', 'K', function()
-  vim.lsp.buf.hover { border = 'rounded', max_height = 25, max_width = 120 }
+  vim.lsp.buf.hover { border = 'single', title = 'lsp' }
 end)
 
 -- Optional: Customize the appearance further using `vim.api.nvim_set_hl`
@@ -380,6 +381,8 @@ require('lazy').setup({
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
+      local builtin = require 'telescope.builtin'
+      local actions = require 'telescope.actions'
       -- Telescope is a fuzzy finder that comes with a lot of different things that
       -- it can fuzzy find! It's more than just a "file finder", it can search
       -- many different aspects of Neovim, your workspace, LSP, and more!
@@ -406,6 +409,7 @@ require('lazy').setup({
         --  All the info you're looking for is in `:help telescope.setup()`
         --
         defaults = {
+          border = true,
           file_ignore_patterns = {
             'node_modules',
             '.git/',
@@ -414,6 +418,13 @@ require('lazy').setup({
           },
           mappings = {
             -- i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+            i = {
+              ['<c-d>'] = actions.delete_buffer,
+            },
+            n = {
+              ['<c-d>'] = actions.delete_buffer,
+              ['dd'] = actions.delete_buffer,
+            },
           },
         },
         pickers = {
@@ -604,7 +615,7 @@ require('lazy').setup({
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
@@ -631,7 +642,7 @@ require('lazy').setup({
           -- code, if the language server you are using supports them
           --
           -- This may be unwanted, since they displace some of your code
-          if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
@@ -648,9 +659,10 @@ require('lazy').setup({
         end
         vim.diagnostic.config {
           severity_sort = true,
-          virtual_lines = true,
+          virtual_text = { current_line = true, severity = { min = 'INFO', max = 'WARN' } },
+          virtual_lines = { current_line = true, severity = { min = 'ERROR' } },
           update_in_insert = true,
-          float = { border = 'rounded', source = 'if_many' },
+          float = { underline = true, border = 'rounded', source = 'if_many', style = 'minimal', header = '' },
           underline = {
 
             severity = {
@@ -702,7 +714,42 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         -- clangd = {},
-        -- gopls = {},
+        gopls = {
+          settings = {
+            gofumpt = true,
+            codelenses = {
+              gc_details = false,
+              generate = true,
+              regenerate_cgo = true,
+              run_govulncheck = true,
+              test = true,
+              tidy = true,
+              upgrade_dependency = true,
+              vendor = true,
+            },
+            hints = {
+              assignVariableTypes = true,
+              compositeLiteralFields = true,
+              compositeLiteralTypes = true,
+              constantValues = true,
+              functionTypeParameters = true,
+              parameterNames = true,
+              rangeVariableTypes = true,
+            },
+            analyses = {
+              fieldalignment = true,
+              nilness = true,
+              unusedparams = true,
+              unusedwrite = true,
+              useany = true,
+            },
+            usePlaceholders = true,
+            completeUnimported = true,
+            staticcheck = true,
+            directoryFilters = { '-.git', '-.vscode', '-.idea', '-.vscode-test', '-node_modules' },
+            semanticTokens = true,
+          },
+        },
         -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -741,7 +788,16 @@ require('lazy').setup({
       --    :Mason
       --
       --  You can press `g?` for help in this menu.
-      require('mason').setup()
+      require('mason').setup {
+        ui = {
+          border = 'rounded', -- Use rounded borders for the Mason window
+          icons = {
+            package_installed = '✅',
+            package_pending = '⏳',
+            package_uninstalled = '❌',
+          },
+        },
+      }
 
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
@@ -1075,7 +1131,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'typescript', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'go', 'typescript', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1127,8 +1183,8 @@ require('lazy').setup({
   { import = 'custom.plugins.harpoon' },
   { import = 'custom.plugins.init' },
   { import = 'custom.plugins.leap' },
+  { import = 'custom.plugins.md_preview' },
   { import = 'custom.plugins.lsp_signature' },
-  -- { import = 'custom.plugins.md_preview' },
   { import = 'custom.plugins.neogit' },
   { import = 'custom.plugins.nvim_emmet' },
   { import = 'custom.plugins.refactoring' },
@@ -1138,7 +1194,7 @@ require('lazy').setup({
   { import = 'custom.plugins.ts_autotag' },
   { import = 'custom.plugins.undotree' },
   { import = 'custom.plugins.vim_doge' },
-  { import = 'custom.plugins.nvim_surround' },
+  -- { import = 'custom.plugins.nvim_surround' },
   { import = 'custom.plugins.treesitter_context' },
   { import = 'custom.plugins.smartcolumn' },
   { import = 'custom.plugins.nvim_colorizer' },

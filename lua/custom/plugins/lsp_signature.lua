@@ -15,9 +15,9 @@ return {
         max_width = 80, -- Max width of the floating window
         max_height = 12, -- Max height of the floating window
         wrap = true,
-        handler_opts = {
-          border = 'single', -- Options: "single", "double", "rounded", "shadow", "none"
-        },
+        -- handler_opts = {
+        --   border = 'single', -- Options: "single", "double", "rounded", "shadow", "none"
+        -- },
         always_trigger = false, -- Show signature on new line instead of always
         transparency = nil, -- Transparency of the floating window
         timer_interval = 200, -- Timer interval for updates (in ms)

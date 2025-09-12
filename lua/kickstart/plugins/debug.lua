@@ -9,6 +9,7 @@
 return {
   -- NOTE: Yes, you can install new plugins here!
   'mfussenegger/nvim-dap',
+
   -- NOTE: And you can specify dependencies as well
   dependencies = {
     -- Creates a beautiful debugger UI
@@ -20,6 +21,7 @@ return {
     -- Installs the debug adapters for you
     'williamboman/mason.nvim',
     'jay-babu/mason-nvim-dap.nvim',
+
     {
       'mxsdev/nvim-dap-vscode-js',
       config = function()
@@ -177,9 +179,19 @@ return {
     -- Install golang specific config
     require('dap-go').setup {
       delve = {
+
+        path = vim.fn.exepath 'dlv',
         -- On Windows delve must be run attached or it crashes.
         -- See https://github.com/leoluz/nvim-dap-go/blob/main/README.md#configuring
         detached = vim.fn.has 'win32' == 0,
+      },
+    }
+    dap.adapters['pwa-node'] = {
+      type = 'server',
+      host = '127.0.0.1',
+      port = 8123,
+      executable = {
+        command = 'js-debug-adapter',
       },
     }
     for _, language in ipairs(js_based_languages) do
@@ -192,6 +204,7 @@ return {
           program = '${file}',
           -- cwd = vim.fn.getcwd(),
           cwd = '${workspaceFolder}',
+          runtimeExecutable = 'node',
           sourceMaps = true,
         },
         -- Debug nodejs processes (make sure to add --inspect when you run the process)
