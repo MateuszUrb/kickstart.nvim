@@ -21,6 +21,7 @@
 
 
 What is Kickstart?
+
   Kickstart.nvim is *not* a distribution.
 
   Kickstart.nvim is a starting point for your own configuration.
@@ -88,6 +89,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 vim.opt.guicursor = 'n-v-c:block'
+
 vim.opt.termguicolors = true
 
 vim.opt.fillchars = { horiz = '━', horizup = '┻', horizdown = '┳', vert = '┃', vertleft = '┫', vertright = '┣', verthoriz = '╋' }
@@ -106,7 +108,6 @@ vim.g.have_nerd_font = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
 vim.opt.relativenumber = true
-
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -146,7 +147,7 @@ vim.o.splitright = true
 vim.o.splitbelow = true
 
 -- lsp hover
-vim.o.winborder = 'rounded'
+vim.o.winborder = 'single'
 vim.cmd [[let &t_Cs = "\e[4:3m"]]
 vim.cmd [[let &t_Ce = "\e[4:0m"]]
 vim.opt.spell = true
@@ -534,6 +535,7 @@ require('lazy').setup({
 
       -- Useful status updates for LSP.
       { 'j-hui/fidget.nvim', opts = {} },
+      { 'b0o/schemastore.nvim' },
 
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
@@ -657,7 +659,6 @@ require('lazy').setup({
           local client = vim.lsp.get_client_by_id(event.data.client_id)
 
           if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
-
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
@@ -693,13 +694,23 @@ require('lazy').setup({
         end,
       })
 
-
       -- Diagnostic Config
       -- See :help vim.diagnostic.Opts
       vim.diagnostic.config {
         severity_sort = true,
-        float = { border = 'rounded', source = 'if_many' },
-        underline = { severity = vim.diagnostic.severity.ERROR },
+        virtual_text = { current_line = true, severity = { min = 'INFO', max = 'WARN' } },
+        virtual_lines = { current_line = true, severity = { min = 'ERROR' } },
+        update_in_insert = true,
+        float = { underline = true, border = 'single', source = 'if_many', style = 'minimal', header = '' },
+        underline = {
+
+          severity = {
+            vim.diagnostic.severity.ERROR,
+            vim.diagnostic.severity.WARN,
+            vim.diagnostic.severity.INFO,
+            vim.diagnostic.severity.HINT,
+          },
+        },
         signs = vim.g.have_nerd_font and {
           text = {
             [vim.diagnostic.severity.ERROR] = '󰅚 ',
@@ -708,19 +719,19 @@ require('lazy').setup({
             [vim.diagnostic.severity.HINT] = '󰌶 ',
           },
         } or {},
-        virtual_text = {
-          source = 'if_many',
-          spacing = 2,
-          format = function(diagnostic)
-            local diagnostic_message = {
-              [vim.diagnostic.severity.ERROR] = diagnostic.message,
-              [vim.diagnostic.severity.WARN] = diagnostic.message,
-              [vim.diagnostic.severity.INFO] = diagnostic.message,
-              [vim.diagnostic.severity.HINT] = diagnostic.message,
-            }
-            return diagnostic_message[diagnostic.severity]
-          end,
-        },
+        -- virtual_text = {
+        --   source = 'if_many',
+        --   spacing = 2,
+        --   format = function(diagnostic)
+        --     local diagnostic_message = {
+        --       [vim.diagnostic.severity.ERROR] = diagnostic.message,
+        --       [vim.diagnostic.severity.WARN] = diagnostic.message,
+        --       [vim.diagnostic.severity.INFO] = diagnostic.message,
+        --       [vim.diagnostic.severity.HINT] = diagnostic.message,
+        --     }
+        --     return diagnostic_message[diagnostic.severity]
+        --   end,
+        -- },
       }
 
       -- LSP servers and clients are able to communicate to each other what features they support.
@@ -785,6 +796,14 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         ts_ls = {},
+        jsonls = {
+          settings = {
+            json = {
+              schemas = require('schemastore').json.schemas(),
+              validate = { enable = true },
+            },
+          },
+        },
         html = {},
         cssls = {},
         cssmodules_ls = {},
@@ -795,7 +814,7 @@ require('lazy').setup({
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
-          -- capabilities = {},
+          capabilities = {},
           settings = {
             Lua = {
               completion = {
@@ -817,7 +836,7 @@ require('lazy').setup({
       --  You can press `g?` for help in this menu.
       require('mason').setup {
         ui = {
-          border = 'rounded', -- Use rounded borders for the Mason window
+          border = 'single', -- Use rounded borders for the Mason window
           icons = {
             package_installed = '✅',
             package_pending = '⏳',
@@ -825,7 +844,6 @@ require('lazy').setup({
           },
         },
       }
-
 
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
@@ -844,7 +862,7 @@ require('lazy').setup({
             -- This handles overriding only values explicitly passed
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+            server.capabilities = vim.tbl_deep_extend('force', capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
         },
@@ -893,10 +911,17 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        javascript = { 'prettierd' },
-        javascriptreact = { 'prettierd' },
-        typescript = { 'prettierd' },
-        typescriptreact = { 'prettierd' },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        go = { 'goimports', 'gofmt' },
+        c = { 'clang_format' },
+        ['*'] = { 'codespell' },
+        -- Use the "_" filetype to run formatters on filetypes that don't
+        -- have other formatters configured.
+        ['_'] = { 'trim_whitespace' },
+        json = { 'jq' },
       },
     },
   },
@@ -906,8 +931,6 @@ require('lazy').setup({
     event = 'VimEnter',
     version = '1.*',
     dependencies = {
-
-      'onsails/lspkind.nvim', -- Adds VSCode-like icons to completion
       -- Snippet Engine
       {
         'L3MON4D3/LuaSnip',
@@ -925,13 +948,21 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
+          'onsails/lspkind.nvim',
           {
             'rafamadriz/friendly-snippets',
             config = function()
               require('luasnip.loaders.from_vscode').lazy_load()
-              require('vim-react-snippets').lazy_load()
               require('luasnip').filetype_extend('javascript', { 'jsdoc' })
               require('luasnip').filetype_extend('javascriptreact', { 'jsdoc' })
+            end,
+          },
+          {
+            'mlaursen/vim-react-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load {
+                paths = { vim.fn.stdpath 'data' .. '/lazy/vim-react-snippets' },
+              }
             end,
           },
         },
@@ -966,7 +997,6 @@ require('lazy').setup({
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'default',
 
-
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
       },
@@ -976,17 +1006,27 @@ require('lazy').setup({
         -- Adjusts spacing to ensure icons are aligned
         nerd_font_variant = 'mono',
       },
+      cmdline = {
+        keymap = { preset = 'inherit' },
+        completion = { menu = { auto_show = true } },
+      },
 
       completion = {
         -- By default, you may press `<c-space>` to show the documentation.
         -- Optionally, set `auto_show = true` to show the documentation after a delay.
-        documentation = { auto_show = false, auto_show_delay_ms = 500 },
+        documentation = { auto_show = true, auto_show_delay_ms = 500 },
+        ghost_text = { enabled = true },
+        menu = {
+          draw = {
+            columns = { { 'label', 'label_description', gap = 1 }, { 'kind_icon', 'kind', gap = 1 } },
+          },
+        },
       },
 
       sources = {
-        default = { 'lsp', 'path', 'snippets', 'lazydev' },
+        default = { 'lsp', 'path', 'snippets', 'buffer', 'lazydev' },
         providers = {
-          lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+          lazydev = { name = 'LazyDev', module = 'lazydev.integrations.blink', score_offset = 100 },
         },
       },
 
@@ -999,10 +1039,10 @@ require('lazy').setup({
       -- the rust implementation via `'prefer_rust_with_warning'`
       --
       -- See :h blink-cmp-config-fuzzy for more information
-      fuzzy = { implementation = 'lua' },
+      fuzzy = { implementation = 'prefer_rust_with_warning' },
 
       -- Shows a signature help window while you type arguments for a function
-      signature = { enabled = true },
+      signature = { enabled = false },
     },
   },
 
@@ -1034,12 +1074,51 @@ require('lazy').setup({
           permanent_delete = false,
         },
         windows = {
+
           preview = true,
-          width_preview = 50,
+          width_preview = 30,
+          width_focus = 30,
         },
 
         vim.api.nvim_set_keymap('n', '<leader>e', ":lua require('mini.files').open()<CR>", { desc = 'show files', noremap = true, silent = true }),
       }
+      -- Function to dynamically resize the mini.files window based on content
+      local function resize_mini_files()
+        local win_id = vim.api.nvim_get_current_win()
+        local buf_id = vim.api.nvim_win_get_buf(win_id)
+        local filetype = vim.bo[buf_id].filetype
+
+        if filetype == 'minifiles' then
+          -- Get the maximum line length in the buffer
+          local max_line_length = 0
+          for _, line in ipairs(vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)) do
+            local line_length = #line
+            if line_length > max_line_length then
+              max_line_length = line_length
+            end
+          end
+
+          -- Set the window width based on the maximum line length
+          local new_width = math.min(80, math.max(20, max_line_length + 10)) -- Adjust as needed
+          vim.api.nvim_win_set_width(win_id, new_width)
+        end
+      end
+
+      -- Attach the resize function to relevant events
+      vim.api.nvim_create_autocmd('BufEnter', {
+        pattern = '*',
+        callback = resize_mini_files,
+      })
+
+      vim.api.nvim_create_autocmd('BufWinEnter', {
+        pattern = '*',
+        callback = resize_mini_files,
+      })
+
+      vim.api.nvim_create_autocmd('BufWritePost', {
+        pattern = '*',
+        callback = resize_mini_files,
+      })
       -- Better Around/Inside textobjects
       --
       -- Examples:
@@ -1054,21 +1133,23 @@ require('lazy').setup({
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
-
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,
       --  and try some other statusline plugin
-      local statusline = require 'mini.statusline'
+      -- local statusline = require 'mini.statusline'
+
       -- set use_icons to true if you have a Nerd Font
-      statusline.setup { use_icons = vim.g.have_nerd_font }
+      -- statusline.setup {
+      --   use_icons = vim.g.have_nerd_font,
+      -- }
 
       -- You can configure sections in the statusline by overriding their
       -- default behavior. For example, here we set the section for
       -- cursor location to LINE:COLUMN
       ---@diagnostic disable-next-line: duplicate-set-field
-      statusline.section_location = function()
-        return '%2l:%-2v'
-      end
+      -- statusline.section_location = function()
+      -- return '%2l:%-2v'
+      -- end
 
       -- ... and there is more!
       --  Check out: https://github.com/echasnovski/mini.nvim
@@ -1076,6 +1157,8 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
+    lazy = false,
     build = ':TSUpdate',
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
@@ -1121,18 +1204,21 @@ require('lazy').setup({
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   -- { import = 'custom.plugins' },
-  { import = 'custom.plugins.kanagawa' },
+  -- { import = 'custom.plugins.kanagawa' },
+  { import = 'custom.plugins.catppuccin' },
+  { import = 'custom.plugins.lualine' },
+  { import = 'custom.plugins.nvim_ufo' },
   { import = 'custom.plugins.comment' },
   { import = 'custom.plugins.better_escape' },
+  { import = 'custom.plugins.markdownRender' },
   { import = 'custom.plugins.bufdelete' },
   { import = 'custom.plugins.cloak' },
   { import = 'custom.plugins.diffview' },
-  { import = 'custom.plugins.focus' },
+  -- { import = 'custom.plugins.focus' },
   { import = 'custom.plugins.git_conflict' },
   { import = 'custom.plugins.harpoon' },
   { import = 'custom.plugins.init' },
   { import = 'custom.plugins.leap' },
-  { import = 'custom.plugins.md_preview' },
   { import = 'custom.plugins.lsp_signature' },
   { import = 'custom.plugins.neogit' },
   { import = 'custom.plugins.nvim_emmet' },
