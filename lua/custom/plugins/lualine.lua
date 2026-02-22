@@ -91,7 +91,7 @@ return {
     end
 
     -- symbols and markers
-    local filename_symbols = { modified = '●M', readonly = '', unnamed = '[No Name]' }
+    local filename_symbols = { modified = 'M', readonly = '', unnamed = '[No Name]' }
 
     require('lualine').setup {
       options = {

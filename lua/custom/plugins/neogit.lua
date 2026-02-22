@@ -8,14 +8,13 @@ return {
       -- Only one of these is needed.
       'nvim-telescope/telescope.nvim', -- optional
       -- 'ibhagwan/fzf-lua', -- optional
-      'echasnovski/mini.pick', -- optional
     },
     config = true,
     init = function()
       local neogit = require 'neogit'
       neogit.setup {}
 
-      vim.keymap.set('n', '<leader>g', ':Neogit<CR>', { desc = 'Neogit' })
+      vim.keymap.set('n', '<leader>gg', ':Neogit<CR>', { desc = 'Neogit' })
     end,
   },
 }

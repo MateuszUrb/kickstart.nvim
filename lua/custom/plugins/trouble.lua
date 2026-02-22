@@ -5,9 +5,10 @@ return {
       modes = {
         symbols = { -- Configure symbols mode
           focus = true,
+          win = { position = 'right', size = 50 },
         },
       },
-    }, -- for default options, refer to the configuration section for custom setup.
+    },
     cmd = 'Trouble',
     keys = {
       {
