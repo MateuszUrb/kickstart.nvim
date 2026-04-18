@@ -22,6 +22,8 @@ return {
     'mason-org/mason.nvim',
     'jay-babu/mason-nvim-dap.nvim',
 
+    'leoluz/nvim-dap-go',
+
     {
       'mxsdev/nvim-dap-vscode-js',
       config = function()
@@ -140,11 +142,13 @@ return {
 
     -- Dap UI setup
     -- For more information, see |:help nvim-dap-ui|
+    ---@diagnostic disable-next-line: missing-fields
     dapui.setup {
       -- Set icons to characters that are more likely to work in every terminal.
       --    Feel free to remove or use ones that you like more! :)
       --    Don't feel like these are good choices.
       icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
+      ---@diagnostic disable-next-line: missing-fields
       controls = {
         icons = {
           pause = '⏸',
@@ -212,11 +216,23 @@ return {
         {
           type = 'pwa-node',
           request = 'attach',
-          name = 'Attach',
+          name = 'Attach to Process',
           processId = require('dap.utils').pick_process,
-          -- cwd = vim.fn.getcwd(),
           cwd = '${workspaceFolder}',
           sourceMaps = true,
+          restart = true, -- useful if the process restarts
+          skipFiles = { '<node_internals>/**', '**/node_modules/**' },
+        },
+        {
+          type = 'pwa-node',
+          request = 'attach',
+          name = 'Attach by Port (9229)',
+          address = '127.0.0.1',
+          port = 9229, -- default Node inspect port
+          cwd = '${workspaceFolder}',
+          sourceMaps = true,
+          restart = true,
+          skipFiles = { '<node_internals>/**', '**/node_modules/**' },
         },
         -- Debug web applications (client side)
         {

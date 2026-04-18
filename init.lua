@@ -1,11 +1,16 @@
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
-vim.loader.enable()
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 vim.opt.guicursor = 'n-v-c:block'
+--
+-- Tab
+vim.opt.tabstop = 4 -- number of visual spaces per TAB
+vim.opt.softtabstop = 4 -- number of spaces in tab when editing
+vim.opt.shiftwidth = 4 -- insert 4 spaces on a tab
+vim.opt.expandtab = true -- tabs are spaces, mainly because of Python
 
 vim.opt.termguicolors = true
 
@@ -14,7 +19,7 @@ vim.api.nvim_set_hl(0, 'VertSplit', { fg = '#00FF00' }) -- Green separator
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
--- vim.opt.number = true
+vim.opt.number = true
 vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
@@ -61,7 +66,7 @@ vim.cmd [[let &t_Ce = "\e[4:0m"]]
 vim.opt.spell = true
 vim.opt.spelllang = { 'en_us' }
 vim.keymap.set('n', 'K', function()
-  vim.lsp.buf.hover { border = 'single', title = 'lsp' }
+  vim.lsp.buf.hover { title = 'lsp' }
 end)
 
 -- Optional: Customize the appearance further using `vim.api.nvim_set_hl`
@@ -163,7 +168,7 @@ require('lazy').setup({
   -- for better jsx comments
   'JoosepAlviste/nvim-ts-context-commentstring',
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
+  { 'NMAC427/guess-indent.nvim', opt = {} }, -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -185,13 +190,16 @@ require('lazy').setup({
   --
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
+    ---@module 'gitsigns'
+    ---@type Gitsigns.Config
+    ---@diagnostic disable-next-line: missing-fields
     opts = {
       signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
+        add = { text = '+' }, ---@diagnostic disable-line: missing-fields
+        change = { text = '~' }, ---@diagnostic disable-line: missing-fields
+        delete = { text = '_' }, ---@diagnostic disable-line: missing-fields
+        topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
+        changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
       },
     },
   },
@@ -254,9 +262,10 @@ require('lazy').setup({
 
       -- Document existing key chains
       spec = {
-        { '<leader>s', group = '[S]earch' },
+        { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
+        { 'gr', group = 'LSP Actions', mode = { 'n' } },
       },
     },
   },
@@ -316,7 +325,7 @@ require('lazy').setup({
           border = true,
           file_ignore_patterns = {
             'node_modules',
-            '.git/',
+            '%.git',
             'package%-lock.json',
             'dist/',
           },
@@ -353,14 +362,48 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
+      vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+      vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
-      -- Slightly advanced example of overriding default behavior and theme
+      -- This runs on LSP attach per buffer (see main LSP attach function in 'neovim/nvim-lspconfig' config for more info,
+      -- it is better explained there). This allows easily switching between pickers if you prefer using something else!
+      vim.api.nvim_create_autocmd('LspAttach', {
+        group = vim.api.nvim_create_augroup('telescope-lsp-attach', { clear = true }),
+        callback = function(event)
+          local buf = event.buf
+          -- Find references for the word under your cursor.
+          vim.keymap.set('n', 'grr', vim.lsp.buf.references, { buffer = buf, desc = '[G]oto [R]eferences' })
+
+          -- Jump to the implementation of the word under your cursor.
+          -- Useful when your language has ways of declaring types without an actual implementation.
+          vim.keymap.set('n', 'gri', vim.lsp.buf.implementation, { buffer = buf, desc = '[G]oto [I]mplementation' })
+
+          -- Jump to the definition of the word under your cursor.
+          -- This is where a variable was first declared, or where a function is defined, etc.
+          -- To jump back, press <C-t>.
+          vim.keymap.set('n', 'grd', vim.lsp.buf.definition, { buffer = buf, desc = '[G]oto [D]efinition' })
+
+          -- Fuzzy find all the symbols in your current document.
+          -- Symbols are things like variables, functions, types, etc.
+          vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })
+
+          -- Fuzzy find all the symbols in your current workspace.
+          -- Similar to document symbols, except searches over your entire project.
+          vim.keymap.set('n', 'gW', builtin.lsp_dynamic_workspace_symbols, { buffer = buf, desc = 'Open Workspace Symbols' })
+
+          -- Jump to the type of the word under your cursor.
+          -- Useful when you're not sure what type a variable is and you want to see
+          -- the definition of its *type*, not where it was *defined*.
+          vim.keymap.set('n', 'grt', vim.lsp.buf.type_definition, { buffer = buf, desc = '[G]oto [T]ype Definition' })
+        end,
+      })
+
+      -- Override default behavior and theme when searching
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
         builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
@@ -386,18 +429,6 @@ require('lazy').setup({
   },
 
   -- LSP Plugins
-  {
-    -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
-    -- used for completion, annotations and signatures of Neovim apis
-    'folke/lazydev.nvim',
-    ft = 'lua',
-    opts = {
-      library = {
-        -- Load luvit types when the `vim.uv` word is found
-        { path = '${3rd}/luv/library', words = { 'vim%.uv' } },
-      },
-    },
-  },
   {
     -- Main LSP Configuration
     'neovim/nvim-lspconfig',
@@ -440,34 +471,9 @@ require('lazy').setup({
           -- or a suggestion from your LSP for this to activate.
           map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
 
-          -- Find references for the word under your cursor.
-          map('grr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
-
-          -- Jump to the implementation of the word under your cursor.
-          --  Useful when your language has ways of declaring types without an actual implementation.
-          map('gri', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
-
-          -- Jump to the definition of the word under your cursor.
-          --  This is where a variable was first declared, or where a function is defined, etc.
-          --  To jump back, press <C-t>.
-          map('grd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
-
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
-
-          -- Fuzzy find all the symbols in your current document.
-          --  Symbols are things like variables, functions, types, etc.
-          map('gO', require('telescope.builtin').lsp_document_symbols, 'Open Document Symbols')
-
-          -- Fuzzy find all the symbols in your current workspace.
-          --  Similar to document symbols, except searches over your entire project.
-          map('gW', require('telescope.builtin').lsp_dynamic_workspace_symbols, 'Open Workspace Symbols')
-
-          -- Jump to the type of the word under your cursor.
-          --  Useful when you're not sure what type a variable is and you want to see
-          --  the definition of its *type*, not where it was *defined*.
-          map('grt', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
 
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
@@ -481,7 +487,7 @@ require('lazy').setup({
               callback = vim.lsp.buf.document_highlight,
             })
 
-            vim.api.nvim_create_autocmd({ 'CursorMoved' }, {
+            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
               buffer = event.buf,
               group = highlight_augroup,
               callback = vim.lsp.buf.clear_references,
@@ -512,8 +518,8 @@ require('lazy').setup({
         virtual_lines = { current_line = true, severity = { min = 'ERROR' } },
         update_in_insert = true,
         float = { underline = true, border = 'single', source = 'if_many', style = 'minimal', header = '' },
+        jump = { float = true },
         underline = {
-
           severity = {
             vim.diagnostic.severity.ERROR,
             vim.diagnostic.severity.WARN,
@@ -593,6 +599,56 @@ require('lazy').setup({
             semanticTokens = true,
           },
         },
+        jsonls = {
+          filetypes = { 'json', 'jsonc' },
+          settings = {
+            json = {
+              -- Schemas https://www.schemastore.org
+              schemas = {
+                {
+                  fileMatch = { 'package.json' },
+                  url = 'https://json.schemastore.org/package.json',
+                },
+                {
+                  fileMatch = { 'tsconfig*.json' },
+                  url = 'https://json.schemastore.org/tsconfig.json',
+                },
+                {
+                  fileMatch = {
+                    '.prettierrc',
+                    '.prettierrc.json',
+                    'prettier.config.json',
+                  },
+                  url = 'https://json.schemastore.org/prettierrc.json',
+                },
+                {
+                  fileMatch = { '.eslintrc', '.eslintrc.json' },
+                  url = 'https://json.schemastore.org/eslintrc.json',
+                },
+                {
+                  fileMatch = { '.babelrc', '.babelrc.json', 'babel.config.json' },
+                  url = 'https://json.schemastore.org/babelrc.json',
+                },
+                {
+                  fileMatch = { 'lerna.json' },
+                  url = 'https://json.schemastore.org/lerna.json',
+                },
+                {
+                  fileMatch = { 'now.json', 'vercel.json' },
+                  url = 'https://json.schemastore.org/now.json',
+                },
+                {
+                  fileMatch = {
+                    '.stylelintrc',
+                    '.stylelintrc.json',
+                    'stylelint.config.json',
+                  },
+                  url = 'http://json.schemastore.org/stylelintrc.json',
+                },
+              },
+            },
+          },
+        },
         -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -602,6 +658,29 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         ts_ls = {},
+        emmet_ls = {
+          filetypes = {
+            'html',
+            'typescriptreact',
+            'javascriptreact',
+            'css',
+            'sass',
+            'scss',
+            'less',
+            'javascript',
+            -- 'typescript',
+            'markdown',
+            'ejs',
+          },
+          init_options = {
+            html = {
+              options = {
+                -- Optional: turn on Emmet in JS/JSX inside EJS
+                ['bem.enabled'] = true,
+              },
+            },
+          },
+        },
         jsonls = {
           settings = {
             json = {
@@ -614,25 +693,40 @@ require('lazy').setup({
         cssls = {},
         cssmodules_ls = {},
         css_variables = {},
-
-        --
+        stylua = {},
 
         lua_ls = {
-          -- cmd = { ... },
-          -- filetypes = { ... },
-          capabilities = {},
-          settings = {
-            Lua = {
-              completion = {
-                callSnippet = 'Replace',
+          on_init = function(client)
+            if client.workspace_folders then
+              local path = client.workspace_folders[1].name
+              if path ~= vim.fn.stdpath 'config' and (vim.uv.fs_stat(path .. '/.luarc.json') or vim.uv.fs_stat(path .. '/.luarc.jsonc')) then
+                return
+              end
+            end
+
+            client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+              runtime = {
+                version = 'LuaJIT',
+                path = { 'lua/?.lua', 'lua/?/init.lua' },
               },
-              -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              -- diagnostics = { disable = { 'missing-fields' } },
-            },
+              workspace = {
+                checkThirdParty = false,
+                -- NOTE: this is a lot slower and will cause issues when working on your own configuration.
+                --  See https://github.com/neovim/nvim-lspconfig/issues/3189
+                library = vim.tbl_extend('force', vim.api.nvim_get_runtime_file('', true), {
+                  '${3rd}/luv/library',
+                  '${3rd}/busted/library',
+                }),
+              },
+            })
+          end,
+          settings = {
+            Lua = {},
           },
         },
       }
 
+      -- uu
       -- Ensure the servers and tools above are installed
       --  You can press `g?` for help in this menu.
       require('mason').setup {
@@ -654,20 +748,24 @@ require('lazy').setup({
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-      require('mason-lspconfig').setup {
-        ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = false,
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
-      }
+      -- require('mason-lspconfig').setup {
+      --   ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
+      --   automatic_installation = false,
+      --   handlers = {
+      --     function(server_name)
+      --       local server = servers[server_name] or {}
+      --       -- This handles overriding only values explicitly passed
+      --       -- by the server configuration above. Useful when disabling
+      --       -- certain features of an LSP (for example, turning off formatting for ts_ls)
+      --       server.capabilities = vim.tbl_deep_extend('force', capabilities, server.capabilities or {})
+      --       require('lspconfig')[server_name].setup(server)
+      --     end,
+      --   },
+      -- }
+      for name, server in pairs(servers) do
+        vim.lsp.config(name, server)
+        vim.lsp.enable(name)
+      end
     end,
   },
 
@@ -679,7 +777,7 @@ require('lazy').setup({
       {
         '<leader>f',
         function()
-          require('conform').format { async = true, lsp_format = 'fallback' }
+          require('conform').format { async = true }
         end,
         mode = '',
         desc = '[F]ormat buffer',
@@ -688,23 +786,30 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        local disable_filetypes = { c = true, cpp = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          return nil
+        -- You can specify filetypes to autoformat on save here:
+        local enabled_filetypes = {
+          -- lua = true,
+          -- python = true,
+        }
+        if enabled_filetypes[vim.bo[bufnr].filetype] then
+          return { timeout_ms = 500 }
         else
-          return {
-            timeout_ms = 500,
-            lsp_format = 'fallback',
-          }
+          return nil
         end
       end,
+      default_format_opts = {
+        lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
+      },
       formatters_by_ft = {
-        lua = { 'stylua' },
+        lua = { 'rustfmt' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        css = { 'prettierd', 'prettier', stop_after_first = true },
+        html = { 'prettierd', 'prettier', stop_after_first = true },
+        ejs = { 'prettierd' },
         typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
         javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
@@ -719,11 +824,26 @@ require('lazy').setup({
     },
   },
 
+  {
+    -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
+    -- used for completion, annotations and signatures of Neovim apis
+    'folke/lazydev.nvim',
+    ft = 'lua',
+    opts = {
+      library = {
+        -- Load luvit types when the `vim.uv` word is found
+        { path = '${3rd}/luv/library', words = { 'vim%.uv' } },
+      },
+    },
+  },
+
   { -- Autocompletion
     'saghen/blink.cmp',
     event = 'VimEnter',
     version = '1.*',
     dependencies = {
+
+      'rafamadriz/friendly-snippets',
       -- Snippet Engine
       {
         'L3MON4D3/LuaSnip',
@@ -742,7 +862,6 @@ require('lazy').setup({
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
           'onsails/lspkind.nvim',
-          'rafamadriz/friendly-snippets',
           'mlaursen/vim-react-snippets',
           'folke/lazydev.nvim',
         },
@@ -807,16 +926,20 @@ require('lazy').setup({
       },
 
       completion = {
+        keyword = { range = 'prefix' },
         trigger = {
-          show_on_keyword = true,
           show_on_trigger_character = true,
-          show_on_insert = false,
         },
+        list = {
+          max_items = 30,
+        },
+
         -- By default, you may press `<c-space>` to show the documentation.
         -- Optionally, set `auto_show = true` to show the documentation after a delay.
-        documentation = { auto_show = false, auto_show_delay_ms = 500 },
+        documentation = { auto_show = true, auto_show_delay_ms = 500 },
         menu = {
           draw = {
+            treesitter = { 'lsp' },
             columns = { { 'label', 'label_description', gap = 1 }, { 'kind_icon', 'kind', gap = 1 } },
           },
         },
@@ -825,14 +948,6 @@ require('lazy').setup({
       sources = {
         default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer' },
         providers = {
-          buffer = {
-            min_keyword_length = 4,
-            max_items = 5,
-          },
-          lsp = {
-            max_items = 20,
-            score_offset = 90,
-          },
           lazydev = {
             name = 'LazyDev',
             module = 'lazydev.integrations.blink',
@@ -950,31 +1065,98 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
+
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     lazy = false,
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-    opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'go', 'typescript', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'javascript', 'typescript', 'tsx', 'ruby' } },
-    },
-    incremental_selection = { enable = false },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+    branch = 'main',
+    -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
+    config = function()
+      -- Filetype detection for .ejs files
+      vim.filetype.add {
+        extension = {
+          ejs = 'html', -- or 'html' if you prefer fallback
+        },
+      }
+
+      -- Register the parser
+      vim.treesitter.language.register('embedded_template', 'ejs')
+      -- ensure basic parser are installed
+      --
+      --
+      local parsers = {
+        'bash',
+        'c',
+        'diff',
+        'go',
+        'typescript',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'javascript',
+        'css',
+        'embedded_template',
+      }
+      require('nvim-treesitter').install(parsers)
+
+      ---@param buf integer
+      ---@param language string
+      local function treesitter_try_attach(buf, language)
+        -- check if parser exists and load it
+        if not vim.treesitter.language.add(language) then
+          return
+        end
+        -- enables syntax highlighting and other treesitter features
+        vim.treesitter.start(buf, language)
+
+        -- enables treesitter based folds
+        -- for more info on folds see `:help folds`
+        -- vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+        -- vim.wo.foldmethod = 'expr'
+
+        -- check if treesitter indentation is available for this language, and if so enable it
+        -- in case there is no indent query, the indentexpr will fallback to the vim's built in one
+        local has_indent_query = vim.treesitter.query.get(language, 'indent') ~= nil
+
+        -- enables treesitter based indentation
+        if has_indent_query then
+          vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+        end
+      end
+
+      local available_parsers = require('nvim-treesitter').get_available()
+      vim.api.nvim_create_autocmd('FileType', {
+        callback = function(args)
+          local buf, filetype = args.buf, args.match
+
+          local language = vim.treesitter.language.get_lang(filetype)
+          if not language then
+            return
+          end
+
+          local installed_parsers = require('nvim-treesitter').get_installed 'parsers'
+
+          if vim.tbl_contains(installed_parsers, language) then
+            -- enable the parser if it is installed
+            treesitter_try_attach(buf, language)
+          elseif vim.tbl_contains(available_parsers, language) then
+            -- if a parser is available in `nvim-treesitter` auto install it, and enable it after the installation is done
+            require('nvim-treesitter').install(language):await(function()
+              treesitter_try_attach(buf, language)
+            end)
+          else
+            -- try to enable treesitter features in case the parser exists but is not available from `nvim-treesitter`
+            treesitter_try_attach(buf, language)
+          end
+        end,
+      })
+    end,
   },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
